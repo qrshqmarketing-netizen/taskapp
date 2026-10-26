@@ -101,7 +101,7 @@ export default function Notifications({ user, reminders, onOpenTask }) {
             </ul>
           )}
           {items.length === 0 && reminders.length === 0 ? (
-            <p className="muted small bell-empty">{user.local ? 'Notifications start once team sign-in is set up.' : 'Nothing new.'}</p>
+            <p className="muted small bell-empty">{user.local ? 'Nothing due today. Tasks with your name that are due or overdue show here.' : 'Nothing new.'}</p>
           ) : (
             <ul className="bell-list">
               {items.map((n) => (

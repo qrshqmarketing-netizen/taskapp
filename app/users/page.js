@@ -8,6 +8,6 @@ export const metadata = { title: 'Team · QRS Tasks' };
 export default async function Users() {
   const user = await currentUser();
   if (!user) redirect('/login');
-  if (user.role !== 'admin') redirect('/');
+  if (user.role !== 'admin' || user.local) redirect('/');
   return <TeamManager me={user} />;
 }

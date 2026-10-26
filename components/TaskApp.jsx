@@ -40,7 +40,7 @@ export default function TaskApp({ initialTasks, loadError, storage, user }) {
   const [quick, setQuick] = useState(''); // '', 'overdue', 'week', 'mine'
   const [editing, setEditing] = useState(null); // a task, or { new: true, ...defaults }
   const [message, setMessage] = useState(loadError ? `Could not load the tasks: ${loadError}` : '');
-  const me = user.name;
+  const [me, setMe] = useState(user.name); // open board: the name this browser typed (cookie qrs_name); signed in: the account's name
   const [team, setTeam] = useState([]); // the team ({ id, name, role }): the assignee picker and notifications
   const timer = useRef(null);
 
@@ -160,7 +160,7 @@ export default function TaskApp({ initialTasks, loadError, storage, user }) {
   const emptyAreas = (areaIds || AREAS.map((a) => a.id)).filter((id) => !tasks.some((t) => t.area === id && open(t)));
 
   // My own open tasks that are overdue or due today, for the bell
-  const reminders = user.local
+  const reminders = !me
     ? []
     : tasks
         .filter((t) => open(t) && isMine(t) && t.due && t.due <= now)
@@ -200,6 +200,20 @@ export default function TaskApp({ initialTasks, loadError, storage, user }) {
           <span className="storage" title="Where the tasks are saved">
             {storage}
           </span>
+          {user.local && (
+            <button
+              className="who-btn"
+              title="Your name goes on the tasks and comments you add"
+              onClick={() => {
+                const name = (window.prompt('Your name (shown on the tasks and comments you add):', me || '') || '').trim().slice(0, 40);
+                if (!name) return;
+                document.cookie = `qrs_name=${encodeURIComponent(name)}; path=/; max-age=31536000; samesite=lax`;
+                setMe(name);
+              }}
+            >
+              {me ? `You: ${me}` : 'Set your name'}
+            </button>
+          )}
           {!user.local && (
             <span className="who" title={user.email}>
               {user.name} <span className="muted">· {user.role === 'admin' ? 'Admin' : 'Member'}</span>

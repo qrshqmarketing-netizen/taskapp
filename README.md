@@ -1,6 +1,8 @@
 # QRS Tasks
 
-The team board for running Quality Roofing Specialists' marketing: the **website**, **Facebook Pages**, **Google Business Profile**, **off-page SEO** and **content**, with a built-in **content calendar**. Team members sign in with a **magic link** (no passwords); **admins** manage the team.
+The team board for running Quality Roofing Specialists' marketing: the **website**, **Facebook Pages**, **Google Business Profile**, **off-page SEO** and **content**, with a built-in **content calendar**.
+
+**Open by default:** anyone with the link can see the board and add, edit and delete tasks, with no sign-in. Each person types their name once (the "Set your name" button at the top; remembered in their browser) and it goes on the tasks and comments they add. Keep the link within the team. To require sign-in instead, set `REQUIRE_LOGIN=true`: team members then sign in with a **magic link** (no passwords) and **admins** manage the team (the setup below).
 
 - **Board** (To do, In progress, Waiting / review, Done; drag cards between columns), **List** (by due date, tick to finish) and **Calendar** (a month of tasks by due/publish date; drag to reschedule, click a day to plan something on it).
 - **Content calendar** tab: content, Facebook and GBP on the calendar together.
@@ -21,7 +23,15 @@ npm run dev
 
 Open http://localhost:3300. With no `.env.local` the board opens without sign-in (as a local admin) and saves to `data/tasks.local.json`, this computer only. To use the shared board and magic links locally, copy `.env.example` to `.env.local` and fill it in (step 6 below adds `http://localhost:3300/**` to Supabase's redirect list).
 
-## Connect Supabase (shared tasks, magic links, roles)
+## Put it online (open board)
+
+1. Supabase → **SQL Editor** → run `scripts/supabase-tasks.sql` once.
+2. Import the GitHub repo in Vercel and add two Environment Variables: `SUPABASE_URL` and `SUPABASE_SECRET_KEY` (Project Settings → API Keys, the `sb_secret_…` key). Deploy.
+3. Share the `*.vercel.app` link with the team.
+
+## Optional: require sign-in (magic links and roles)
+
+Set `REQUIRE_LOGIN=true` in Vercel and follow these steps.
 
 The app can use the website's Supabase project. Its team role is stored as `tasks_role` in each person's app_metadata, separate from the website dashboard's `role`, so task access never gives website dashboard access (or the other way round).
 
