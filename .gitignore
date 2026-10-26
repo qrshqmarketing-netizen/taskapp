@@ -3,5 +3,5 @@ node_modules
 .vercel
 .env*.local
 .env
-data/tasks.local.json
+data/*.local.json
 .DS_Store
