@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AREAS, PRIORITIES, STARTER_TASKS, STATUSES, areaName, areaOf } from '@/lib/areas';
+import { AREAS, PRIORITIES, STARTER_TASKS, STATUSES, areaName, areaOf, dispositionName } from '@/lib/areas';
 import TaskDialog from './TaskDialog';
+import Notifications from './Notifications';
 import Calendar from './Calendar';
 import { Card, addDays, shortDate, today } from './shared';
 
@@ -40,7 +41,7 @@ export default function TaskApp({ initialTasks, loadError, storage, user }) {
   const [editing, setEditing] = useState(null); // a task, or { new: true, ...defaults }
   const [message, setMessage] = useState(loadError ? `Could not load the tasks: ${loadError}` : '');
   const me = user.name;
-  const [team, setTeam] = useState([]); // the team's names, for the owner picker
+  const [team, setTeam] = useState([]); // the team ({ id, name, role }): the assignee picker and notifications
   const timer = useRef(null);
 
   // Remembered per browser: the last area and view
@@ -50,7 +51,7 @@ export default function TaskApp({ initialTasks, loadError, storage, user }) {
     if (!user.local)
       fetch('/api/users')
         .then((r) => (r.ok ? r.json() : { users: [] }))
-        .then((d) => setTeam(d.users.map((u) => u.name)))
+        .then((d) => setTeam(d.users))
         .catch(() => {});
   }, [user.local]);
   useEffect(() => remember('qrs-tasks-area', area), [area]);
@@ -125,7 +126,8 @@ export default function TaskApp({ initialTasks, loadError, storage, user }) {
   const now = today();
   const weekEnd = addDays(now, 7);
   const areaIds = area === 'calendar' ? CONTENT_AREAS : area === 'all' ? null : [area];
-  const owners = useMemo(() => [...new Set([...team, ...tasks.map((t) => t.owner)].filter(Boolean))].sort(), [tasks, team]);
+  const owners = useMemo(() => [...new Set([...team.map((m) => m.name), ...tasks.map((t) => t.owner)].filter(Boolean))].sort(), [tasks, team]);
+  const isMine = (t) => (user.id && t.assignee_id === user.id) || (me && (t.owner || '').toLowerCase() === me.toLowerCase());
 
   const inArea = tasks.filter((t) => !areaIds || areaIds.includes(t.area));
   const open = (t) => t.status !== 'done';
@@ -142,13 +144,13 @@ export default function TaskApp({ initialTasks, loadError, storage, user }) {
     if (q && !`${t.title} ${t.notes} ${t.owner}`.toLowerCase().includes(q)) return false;
     if (quick === 'overdue') return open(t) && t.due && t.due < now;
     if (quick === 'week') return open(t) && t.due && t.due <= weekEnd;
-    if (quick === 'mine') return me && t.owner.toLowerCase() === me.toLowerCase();
+    if (quick === 'mine') return isMine(t);
     return true;
   });
 
   const currentView = area === 'calendar' ? 'calendar' : view;
   const newTask = (defaults = {}) =>
-    setEditing({ new: true, title: '', area: areaIds?.[0] || 'website', status: 'todo', priority: 'normal', owner: me || '', due: '', repeat: '', link: '', notes: '', ...defaults });
+    setEditing({ new: true, title: '', area: areaIds?.[0] || 'website', status: 'todo', priority: 'normal', owner: me || '', assignee_id: user.local ? '' : user.id, due: '', repeat: '', link: '', notes: '', ...defaults });
 
   // Starter tasks for an area with nothing open yet: daily ones today, the rest spread over the next two weeks
   const startersFor = (areaList) =>
@@ -156,6 +158,18 @@ export default function TaskApp({ initialTasks, loadError, storage, user }) {
       (STARTER_TASKS[id] || []).map((s, i) => ({ ...s, area: id, status: 'todo', priority: s.priority || 'normal', owner: '', due: s.repeat === 'daily' ? now : addDays(now, 1 + i * 3) })),
     );
   const emptyAreas = (areaIds || AREAS.map((a) => a.id)).filter((id) => !tasks.some((t) => t.area === id && open(t)));
+
+  // My own open tasks that are overdue or due today, for the bell
+  const reminders = user.local
+    ? []
+    : tasks
+        .filter((t) => open(t) && isMine(t) && t.due && t.due <= now)
+        .map((t) => ({ task_id: t.id, kind: t.due < now ? 'overdue' : 'due', text: `${t.due < now ? 'Overdue' : 'Due today'}: “${t.title}”` }));
+  const openTask = (id) => {
+    const t = tasks.find((x) => x.id === id);
+    if (t) setEditing(t);
+    else say('That task was deleted.');
+  };
 
   const logout = async () => {
     await fetch('/api/logout', { method: 'POST' });
@@ -182,6 +196,7 @@ export default function TaskApp({ initialTasks, loadError, storage, user }) {
           </button>
         </nav>
         <div className="top-end">
+          <Notifications user={user} reminders={reminders} onOpenTask={openTask} />
           <span className="storage" title="Where the tasks are saved">
             {storage}
           </span>
@@ -259,6 +274,8 @@ export default function TaskApp({ initialTasks, loadError, storage, user }) {
         <TaskDialog
           task={editing}
           owners={owners}
+          team={team}
+          user={user}
           onClose={() => setEditing(null)}
           onSave={async (data) => {
             if (editing.new) {
@@ -367,6 +384,7 @@ function List({ tasks, now, onOpen, onSave }) {
                   </button>
                   {t.repeat && <span className="repeat"> ↻</span>}
                   {t.priority === 'high' && <span className="prio">High</span>}
+                  {t.status === 'done' && t.disposition && <span className="dispo">{dispositionName(t.disposition)}</span>}
                 </td>
                 <td>
                   <span className="pill" style={{ '--c': areaOf(t.area).color }}>

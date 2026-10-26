@@ -6,7 +6,11 @@ The team board for running Quality Roofing Specialists' marketing: the **website
 - **Content calendar** tab: content, Facebook and GBP on the calendar together.
 - Each task has an area, owner, due/publish date, priority, link and notes, and can **repeat** (daily, weekly, every 2 weeks, monthly, every 3 months): marking a repeating task Done adds the next one.
 - **Add starter tasks** fills an empty area with a routine (`lib/areas.js`, edit freely).
-- **Roles:** admins add people, change roles, send sign-in links, remove access (the Team page) and can delete any task; members add, edit and move tasks and delete the ones they added.
+- **Roles:** admins add people, change roles, send sign-in links, remove access (the Team page) and can delete any task or comment; members add, edit and move tasks and delete the tasks and comments they added.
+- **Tasks:** add, view, edit and delete; assign to a team member; notes on every task.
+- **Comments** on every task: post, edit your own, delete your own (admins any).
+- **Disposition:** when a task is marked Done, how it ended (Completed, Published / posted, Sent / submitted, Fixed, Rescheduled, Not needed, Cancelled, Blocked) and an optional outcome note; it shows on the card and in the list, and reopening a task clears it.
+- **Notifications** (the bell, per signed-in person): a task assigned to you; a comment on a task you're assigned to, added, or commented on; a task you added that someone else closed (with its disposition); your own tasks overdue or due today; and for **admins**, tasks moved to "Waiting / review" and new teammates. Nobody is notified about their own actions. Checked every minute.
 
 ## Run it on your computer
 
@@ -21,7 +25,7 @@ Open http://localhost:3300. With no `.env.local` the board opens without sign-in
 
 The app can use the website's Supabase project. Its team role is stored as `tasks_role` in each person's app_metadata, separate from the website dashboard's `role`, so task access never gives website dashboard access (or the other way round).
 
-1. **Create the table.** Supabase dashboard → **SQL Editor** → New query → paste `scripts/supabase-tasks.sql` → **Run**. This makes `team_tasks`, with row level security on and no public access (only the app's server, with the secret key, can read it).
+1. **Create the tables.** Supabase dashboard → **SQL Editor** → New query → paste `scripts/supabase-tasks.sql` → **Run**. This makes `team_tasks`, `team_task_comments` and `team_notifications`, with row level security on and no public access (only the app's server, with the secret key, can read them). Safe to run again after an update.
 2. **Copy the keys.** Dashboard → **Project Settings → API Keys**: a **publishable** key (`sb_publishable_…`) and a **secret** key (`sb_secret_…`). The project URL is under **Connect** (like `https://abcdefgh.supabase.co`).
 3. **Set up email sending (important).** Supabase's built-in email service only sends a few emails an hour and only to your own team's addresses, which is not enough for sign-in links. Dashboard → **Authentication → Emails → SMTP Settings** → enable custom SMTP. With Resend (the website already uses it): host `smtp.resend.com`, port `465`, user `resend`, password = a Resend API key, sender e.g. `tasks@qualityroofingspecialists.com` (a domain verified in Resend), sender name `QRS Tasks`.
 4. **Change the Magic Link email.** Dashboard → **Authentication → Emails → Templates → Magic Link**. Replace the link so it goes to the task app (not the website) and carries a one-time token the app checks on its server:

@@ -21,7 +21,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const list = Array.isArray(body.tasks) ? body.tasks.slice(0, 50) : [body.task || body];
-    return NextResponse.json({ tasks: await createTasks(list, user.email || user.name) });
+    return NextResponse.json({ tasks: await createTasks(list, user) });
   } catch (err) {
     return fail(err);
   }

@@ -3,11 +3,11 @@ import { deleteTask, getTask, updateTask } from '@/lib/store';
 import { fail, guard } from '@/lib/api';
 
 export async function PATCH(request, { params }) {
-  const { error } = await guard(request);
+  const { error, user } = await guard(request);
   if (error) return error;
   try {
     const { id } = await params;
-    return NextResponse.json(await updateTask(id, await request.json()));
+    return NextResponse.json(await updateTask(id, await request.json(), user));
   } catch (err) {
     return fail(err);
   }

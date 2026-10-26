@@ -1,6 +1,6 @@
 'use client';
 
-import { REPEATS, areaOf } from '@/lib/areas';
+import { REPEATS, areaOf, dispositionName } from '@/lib/areas';
 
 // Dates as YYYY-MM-DD in the viewer's own time zone
 export const today = () => {
@@ -27,6 +27,8 @@ export function TaskMeta({ task, now }) {
         </span>
       )}
       {task.priority === 'high' && <span className="prio">High</span>}
+      {task.status === 'done' && task.disposition && <span className={'dispo dispo-' + task.disposition}>{dispositionName(task.disposition)}</span>}
+      {task.notes && <span title="Has notes">📝</span>}
       {task.link && <span title="Has a link">🔗</span>}
       {task.owner && (
         <span className="avatar" title={task.owner}>

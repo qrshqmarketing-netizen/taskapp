@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail, guard } from '@/lib/api';
 import { forgetMember, toMember } from '@/lib/auth';
+import { adminIds, forgetTeam, notify } from '@/lib/notify';
 import { ROLES, createUser, findUserByEmail, getUser, listUsers, roleOf, sendMagicLink, setName, setTasksRole } from '@/lib/supabaseAuth';
 
 export const dynamic = 'force-dynamic';
@@ -46,6 +47,8 @@ export async function POST(request) {
       } else {
         await createUser(email, name, role);
       }
+      forgetTeam();
+      await notify(await adminIds(), { kind: 'team', text: `${me.name} added ${name || email} to the team as ${role === 'admin' ? 'an admin' : 'a member'}`, actor: me });
       let sent = true;
       try {
         await link(email);
@@ -72,6 +75,7 @@ export async function POST(request) {
     } else throw new Error('Unknown action.');
 
     forgetMember(target.id);
+    forgetTeam();
     return NextResponse.json({ users: await team(), message: body.action === 'remove' ? `${target.email} no longer has access.` : 'Role updated.' });
   } catch (err) {
     return fail(err);
